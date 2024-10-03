@@ -1,0 +1,41 @@
+image:
+  name: registry.gitlab.com/gitlab-org/gitlab-build-images:terraform
+  entrypoint:
+    ["/bin/sh", "-c"]
+variables:
+    AWS_ACCESS_KEY_ID: ${MY_ACCESS_KEY}
+    AWS_SECRET_ACCESS_KEY: ${MY_SECERT_KEY}
+    AWS_DEFAULT_REGION: "us-east-1"
+before_script:
+    - terraform --version
+    - terraform init 
+stages:
+    - validate
+    - plan
+    - apply
+    - destory
+validate:
+    stage: validate
+    script: 
+        - terraform validate
+plan:
+    stage: plan
+    dependencies: 
+        - validate
+    script: 
+        - terraform plan -out="planfile" -lock=false
+    artifacts:
+        paths:
+        - planfile
+apply:
+    stage: apply
+    dependencies: 
+        - plan
+    script:
+        - terraform apply -input=false -lock=false "planfile"
+    
+destory:
+    stage: destory
+    script:
+        - terraform destroy -auto-approve -lock=false
+    when: manual
